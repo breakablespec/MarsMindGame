@@ -1,7 +1,7 @@
-// Entry gate: log in with an X handle, then complete 4 quests (+1000 each) to unlock the game.
+// Entry gate: sign in with X (or type an @handle when there is no server), then complete 4 quests to unlock the game.
 
 import { CONFIG } from '../account/config';
-import { QUESTS, account, fmt, login, logout, openQuest, questDone, questWait, questsComplete, questsDoneCount, tickQuests, validHandle } from '../account/account';
+import { QUESTS, account, accountMode, fmt, login, loginWithX, logout, onAccount, openQuest, questDone, questTitle, questWait, questsComplete, questsDoneCount, tickQuests, validHandle } from '../account/account';
 import { h } from './dom';
 
 const X_LOGO = '𝕏';
@@ -16,7 +16,10 @@ export function loginScreen(o: { onDone: () => void; onBack: () => void; sound: 
     login(input.value); o.sound('core'); o.onDone();
   };
   input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') go(); });
-  const xbtn = h('button', { class: 'btn big xbtn', type: 'button', onclick: () => { xbtn.hidden = true; form.hidden = false; setTimeout(() => input.focus(), 30); } }, h('span', { class: 'xl' }, X_LOGO), 'LOG IN WITH X');
+  const xbtn = h('button', { class: 'btn big xbtn', type: 'button', onclick: () => {
+    if (accountMode() === 'server') { xbtn.replaceChildren(h('span', { class: 'xl' }, X_LOGO), 'OPENING X…'); (xbtn as HTMLButtonElement).disabled = true; o.sound('core'); loginWithX(); return; }
+    xbtn.hidden = true; form.hidden = false; setTimeout(() => input.focus(), 30);
+  } }, h('span', { class: 'xl' }, X_LOGO), 'LOG IN WITH X');
   return h('div', { class: 'title gate' }, h('div', { class: 'titlecard gcard' },
     h('div', { class: 'brand' }, 'MARS MIND', h('span', { class: 'chip core' }, '● ACCESS')),
     h('h2', null, 'Join the colony'),
@@ -35,7 +38,7 @@ export function questScreen(o: { onDone: () => void; onBack: () => void; sound: 
     head, list, enter,
     h('div', { class: 'row' },
       h('button', { class: 'btn small ghost', type: 'button', style: 'color:var(--paper2)', onclick: o.onBack }, '← BACK'),
-      h('button', { class: 'btn small ghost', type: 'button', style: 'color:var(--paper2)', onclick: () => { logout(); o.onBack(); } }, 'NOT YOU?'))));
+      h('button', { class: 'btn small ghost', type: 'button', style: 'color:var(--paper2)', onclick: () => { void logout().then(o.onBack); } }, 'NOT YOU?'))));
   let key = '';
   const render = () => {
     const done = questsDoneCount();
@@ -50,14 +53,15 @@ export function questScreen(o: { onDone: () => void; onBack: () => void; sound: 
       const action = isDone ? h('span', { class: 'qok' }, '✓')
         : opened ? h('span', { class: 'qwait' }, `${Math.ceil(wait)}s`)
           : h('a', { class: 'btn small green', href: q.url(), target: '_blank', rel: 'noopener noreferrer', onclick: () => { openQuest(q.id); o.sound('click'); render(); } }, 'GO');
-      return h('div', { class: `quest ${isDone ? 'done' : ''}` }, h('span', { class: 'qi' }, ICON[q.id]), h('span', { class: 'qt' }, q.title), h('span', { class: 'qr' }, `+${fmt(CONFIG.questReward)}`), action);
+      return h('div', { class: `quest ${isDone ? 'done' : ''}` }, h('span', { class: 'qi' }, ICON[q.id]), h('span', { class: 'qt' }, questTitle(q)), h('span', { class: 'qr' }, `+${fmt(CONFIG.questReward)}`), action);
     }));
     (enter as HTMLButtonElement).disabled = done < QUESTS.length;
   };
   render();
+  const off = onAccount((_, gain) => { if (gain?.reason.startsWith('Quest:')) { o.sound('done'); o.toast(`+${fmt(gain.amount)} ${CONFIG.currency} · ${gain.reason.slice(7)}`, 'good'); } });
   const iv = window.setInterval(() => {
-    if (!root.isConnected) { clearInterval(iv); return; }
-    for (const id of tickQuests()) { o.sound('done'); o.toast(`+${fmt(CONFIG.questReward)} ${CONFIG.currency} · ${QUESTS.find((q) => q.id === id)!.short}`, 'good'); }
+    if (!root.isConnected) { clearInterval(iv); off(); return; }
+    tickQuests();
     render();
   }, 250);
   return root;

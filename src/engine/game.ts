@@ -1,7 +1,7 @@
 // Game: owns the colony state, the loop, input, camera, selection, plans in preview,
 // manual build placement, DRIVE mode, and routes simulation events to fx/audio/UI.
 
-import { account, captureRef, fmt, gameEvent, questsComplete } from '../account/account';
+import { account, captureRef, fmt, gameEvent, initAccount, onAccount, questsComplete, type Gain } from '../account/account';
 import { CONFIG } from '../account/config';
 import { loginScreen, questScreen } from '../ui/gate';
 import { MODULES, ModuleKind, RES, ResId, ROBOTS, SEC_PER_MIN, DEPOSIT } from '../sim/defs';
@@ -88,8 +88,28 @@ export class Game {
 
   // ================================================================ flow
   async boot(skip = false) {
+    const ready = initAccount();
     if (!skip) await playLoader($('#screen'));
+    await ready;
+    onAccount((_, g) => { if (g) this.showGain(g); else this.hud.update(true); });
     this.showTitle();
+    this.afterLogin();
+  }
+  /** Back from X: continue straight into the quests (or the colony); show why a login failed. */
+  afterLogin() {
+    let p: URLSearchParams;
+    try { p = new URLSearchParams(location.search); } catch { return; }
+    const auth = p.get('auth');
+    if (!auth) return;
+    p.delete('auth'); const reason = p.get('reason'); p.delete('reason');
+    try { history.replaceState(null, '', `${location.pathname}${p.toString() ? `?${p}` : ''}${location.hash}`); } catch { /* sandboxed */ }
+    if (auth === 'ok' && account()) {
+      this.toast(`Signed in as @${account()!.handle}`, 'good');
+      this.enter(() => { const s = hasSave() ? loadGame() : null; this.startColony(s ?? newColony(), !s); });
+    } else if (auth === 'error') {
+      const why: Record<string, string> = { cancelled: 'X login cancelled', expired: 'Login took too long — try again', token: 'X refused the login — check the app keys', profile: 'Could not read your X profile', database: 'Could not save your profile — try again', server: 'Login is not configured on the server yet' };
+      this.toast(why[reason ?? ''] ?? 'X login failed — try again', 'bad');
+    }
   }
   showTitle() {
     this.mode = 'title';
@@ -571,16 +591,19 @@ export class Game {
       case 'jobFailed': break;
     }
   }
-  /** Token rewards for real colony events (+ one-time achievements). */
+  /** Report a colony event; the MARS it earns arrives through onAccount (see showGain). */
   rewards(e: SimEvent) {
-    const gains = gameEvent(this.st, e.type);
-    let dy = 0;
-    for (const g of gains) {
-      if (g.reason.startsWith('Achievement')) { this.toast(`🏆 ${g.reason.slice(13)} · +${fmt(g.amount)} ${CONFIG.ticker}`, 'big'); sfx('stage'); continue; }
-      if (e.x !== undefined && e.y !== undefined) this.r.float(e.x, e.y - 44 - dy, `+${fmt(g.amount)} ${CONFIG.ticker}`, '#ffcc2e', true);
-      else this.toast(`+${fmt(g.amount)} ${CONFIG.ticker} · ${g.reason}`, 'good');
-      dy += 12;
-    }
+    gameEvent(this.st, e.type, e.data ?? {}, e.x !== undefined && e.y !== undefined ? { x: e.x, y: e.y } : undefined);
+  }
+  private gainStack = 0;
+  private gainT = 0;
+  showGain(g: Gain) {
+    if (this.mode !== 'play' || g.reason.startsWith('Quest:')) return;
+    if (g.reason.startsWith('Achievement')) { this.toast(`🏆 ${g.reason.slice(13)} · +${fmt(g.amount)} ${CONFIG.ticker}`, 'big'); sfx('stage'); }
+    else if (g.at) {
+      const t = performance.now(); this.gainStack = t - this.gainT < 600 ? this.gainStack + 1 : 0; this.gainT = t;
+      this.r.float(g.at.x, g.at.y - 44 - this.gainStack * 12, `+${fmt(g.amount)} ${CONFIG.ticker}`, '#ffcc2e', true);
+    } else this.toast(`+${fmt(g.amount)} ${CONFIG.ticker} · ${g.reason}`, 'good');
     this.hud.update(true);
   }
   taskEvent(d: Record<string, unknown>, ok: boolean) {

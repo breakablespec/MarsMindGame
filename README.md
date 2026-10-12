@@ -167,7 +167,7 @@ Every robot has battery, condition, cargo, a current task and efficiency. They p
 <td width="44%"><img src="assets/quests.gif" width="100%" alt="Log in with X, four quests, each turns into +1,000 MARS, then ENTER COLONY"></td>
 <td>
 
-Log in with your X handle and complete four quests to unlock the colony. Each one pays **+1,000 MARS**:
+**Sign in with X** and complete four quests to unlock the colony. Each one pays **+1,000 MARS**:
 
 `FOLLOW` · `LIKE` · `REPOST` · `COMMENT`
 
@@ -208,22 +208,26 @@ npm test           # headless simulation + command tests
 npm run dev        # build and serve locally
 ```
 
-### Deploy on Netlify
+### Go live: Sign in with X + Supabase
 
-Click **Deploy to Netlify** at the top, or connect the repo in Netlify. [`netlify.toml`](netlify.toml) already sets the build command and the `dist` folder. Referral links pick up whatever domain the game is served from.
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#120d18','primaryTextColor':'#f6ead2','primaryBorderColor':'#4dff7a','lineColor':'#1fae4a','fontFamily':'monospace'}}}%%
+flowchart LR
+  P["🧑‍🚀 Player"] -- "LOG IN WITH X" --> L["/api/auth/login<br/>PKCE"]
+  L --> X["𝕏 approve"]
+  X --> C["/api/auth/callback<br/>users/me"]
+  C --> S[("Supabase<br/>players · quests · ledger")]
+  C -- "signed cookie" --> P
+  P -- "quests · events · achievements" --> A["/api/*<br/>Netlify Function"]
+  A -- "rewards decided here" --> S
+```
 
-### Make it yours
+1. **Supabase:** run [`supabase/migrations/001_mars_mind.sql`](supabase/migrations/001_mars_mind.sql) in the SQL editor.
+2. **Netlify:** import the repo. [`netlify.toml`](netlify.toml) builds the page and the `/api` function.
+3. **X app:** OAuth 2.0, Web App, callback `https://YOUR-SITE/api/auth/callback`.
+4. **Env vars:** `X_CLIENT_ID`, `X_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`, `POST_URL`.
 
-Everything launch-specific lives in [`src/account/config.ts`](src/account/config.ts):
-
-| Setting | What it does |
-|---|---|
-| `xHandle` | the account for the FOLLOW quest |
-| `postUrl` | the post for LIKE, REPOST and COMMENT |
-| `questReward` | MARS per quest (1,000) |
-| `questDelaySec` | seconds after opening a quest before it counts (5) |
-| `currency` / `ticker` | token name |
-| `gameUrl` | fixed address for referral links (empty = current site) |
+Step by step: **[SETUP.md](SETUP.md)**. Without the server (a plain file or `npm run dev`), the game falls back to typing an @handle and keeps everything in the browser.
 
 <details>
 <summary><b>Project structure</b></summary>
@@ -235,9 +239,11 @@ src/
 ├── ai/         CORE: parser → analysis → planner → validator, autonomy, learning
 ├── render/     Canvas 2D renderer, pixel sprites generated in code, lighting, fog
 ├── ui/         HUD, ASK CORE bar, command centre, quests gate, profile & card
-├── account/    X handle, quests, MARS balance, achievements, referrals
+├── account/    X login, quests, MARS balance, achievements, referrals (server or local)
 ├── audio/      synthesized sound effects and adaptive music
 └── engine/     game loop, input, camera, DRIVE mode
+netlify/        /api function: Sign in with X (OAuth 2.0 + PKCE), quests, rewards
+supabase/       SQL: players, quests, ledger + reward functions (RLS on)
 docs/           design docs: game loop, AI command architecture, robots, resources, art
 tests/          headless runs: full flows, command parsing, late game, 8-sol soak
 tools/          scene staging, README data and header rendering

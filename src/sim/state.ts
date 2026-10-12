@@ -205,6 +205,7 @@ export interface ColonyState {
   firsts: Record<string, number>;
   scoreHist: number[];
   demo?: boolean;
+  colonyId?: string;          // random id used to de-duplicate MARS rewards per colony
 }
 
 export const newId = (st: ColonyState) => st.nextId++;

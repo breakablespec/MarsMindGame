@@ -1,7 +1,7 @@
 // Player profile: balance, achievements, earnings, and the shareable player card (quote post + ref link).
 
 import { CONFIG } from '../account/config';
-import { ACHIEVEMENTS, account, fmt, quoteIntent, refLink, unlocked } from '../account/account';
+import { ACHIEVEMENTS, account, fmt, logout, quoteIntent, refLink, unlocked } from '../account/account';
 import { STAGE_INFO, type ModuleKind } from '../sim/defs';
 import { onlineModules } from '../sim/colony';
 import type { Game } from '../engine/game';
@@ -98,7 +98,10 @@ export function profileBody(g: Game): HTMLElement {
   const copy = async () => { try { await navigator.clipboard.writeText(refLink()); g.toast('Ref link copied', 'good'); } catch { g.toast(refLink(), 'info'); } };
   return h('div', { class: 'profile' },
     h('div', { class: 'phead' },
-      h('div', null, h('b', { class: 'lt' }, `@${a.handle}`), h('div', { class: 'bal' }, h('span', { class: 'big-num' }, fmt(a.tokens)), ` ${CONFIG.currency}`))),
+      a.avatar ? h('img', { class: 'pav', src: a.avatar, alt: '', referrerpolicy: 'no-referrer' }) : null,
+      h('div', { class: 'grow' }, h('b', { class: 'lt' }, `@${a.handle}`), h('div', { class: 'bal' }, h('span', { class: 'big-num' }, fmt(a.tokens)), ` ${CONFIG.currency}`)),
+      h('div', { class: 'pmeta' }, typeof a.invites === 'number' ? h('span', { class: 'chip' }, `${a.invites} invited`) : null,
+        h('button', { class: 'btn small', type: 'button', onclick: () => { void logout().then(() => { g.wins.close(); g.showTitle(); }); } }, 'LOG OUT'))),
     card,
     h('div', { class: 'share' },
       h('button', { class: 'btn green', type: 'button', onclick: () => void saveCanvas(big, `commander-${a.handle}.png`, g) }, '1 · SAVE CARD'),

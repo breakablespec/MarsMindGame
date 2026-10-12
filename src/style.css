@@ -342,7 +342,10 @@ h3 { font: 700 13px var(--display); margin: 10px 0 6px; text-transform: uppercas
 /* ---------- profile ---------- */
 .win.profilewin { width: min(760px, calc(100% - 16px)); }
 .profile { display: grid; gap: 10px; }
-.profile .phead { display: flex; justify-content: space-between; align-items: center; }
+.profile .phead { display: flex; gap: 12px; align-items: center; }
+.profile .phead .grow { flex: 1; min-width: 0; }
+.profile .pav { width: 52px; height: 52px; border: 3px solid var(--ink); background: var(--space); object-fit: cover; }
+.profile .pmeta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .profile .phead .bal { color: #a05a00; }
 .profile .pcard { width: 100%; image-rendering: pixelated; border: 3px solid var(--ink); }
 .profile .share { display: flex; gap: 8px; flex-wrap: wrap; }
