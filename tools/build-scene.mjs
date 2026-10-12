@@ -1,0 +1,10 @@
+import { build } from 'esbuild';
+import { readFileSync, writeFileSync } from 'node:fs';
+const out = process.argv[2];
+const clean = process.argv.includes('--clean');
+const res = await build({ entryPoints: ['tools/scene.ts'], bundle: true, format: 'iife', target: 'es2020', write: false });
+const js = res.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+const css = readFileSync('src/style.css', 'utf8') + (clean ? '#toasts,#hud,#world-ui,#cmd,#layer,#screen{display:none!important}' : '');
+const page = readFileSync('src/index.html', 'utf8').replace('/*CSS*/', () => css).replace('/*JS*/', () => js);
+writeFileSync(out, `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0">${page}</body></html>`);
+console.log('scene built');

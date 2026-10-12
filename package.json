@@ -1,0 +1,17 @@
+{
+  "name": "mars-mind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MARS MIND — build a pixel Mars colony and command it in plain language. CORE plans, robots build.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && npx --yes serve dist",
+    "typecheck": "tsc -p .",
+    "test": "node tests/run.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "engines": { "node": ">=20" }
+}
