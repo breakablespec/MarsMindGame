@@ -31,6 +31,7 @@ ${site ? `<meta property="og:url" content="${site}/">` : ''}
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${desc}">
 <meta name="twitter:image" content="${site}/og.png">
+<script>window.__MM_SERVER__=1</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html,body{margin:0;background:#07050b}[hidden]{display:none!important}</style>
 </head>
 <body>

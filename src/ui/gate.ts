@@ -1,7 +1,7 @@
 // Entry gate: sign in with X (or type an @handle when there is no server), then complete 4 quests to unlock the game.
 
 import { CONFIG } from '../account/config';
-import { QUESTS, account, accountMode, fmt, login, loginWithX, logout, onAccount, openQuest, questDone, questTitle, questWait, questsComplete, questsDoneCount, tickQuests, validHandle } from '../account/account';
+import { QUESTS, account, accountMode, fmt, login, loginProblem, loginWithX, logout, onAccount, openQuest, questDone, questTitle, questWait, questsComplete, questsDoneCount, tickQuests, validHandle } from '../account/account';
 import { h } from './dom';
 
 const X_LOGO = '𝕏';
@@ -25,6 +25,7 @@ export function loginScreen(o: { onDone: () => void; onBack: () => void; sound: 
     h('h2', null, 'Join the colony'),
     h('p', { class: 'sub' }, `Log in, complete 4 quests, earn ${fmt(CONFIG.questReward * QUESTS.length)} ${CONFIG.currency}.`),
     xbtn, form,
+    loginProblem() ? h('div', { class: 'gerr' }, `⚠ ${loginProblem()}`) : null,
     h('button', { class: 'btn small ghost', type: 'button', style: 'color:var(--paper2);justify-self:start', onclick: o.onBack }, '← BACK')));
 }
 

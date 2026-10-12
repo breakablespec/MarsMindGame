@@ -1,6 +1,9 @@
 // Shared helpers for the API: env, cookies, signed sessions, Supabase RPC.
+import { webcrypto } from 'node:crypto';
 
 declare const process: { env: Record<string, string | undefined> };
+// Web Crypto from node:crypto works on every Node runtime Netlify offers
+const wc = webcrypto as unknown as Crypto;
 
 export const env = (k: string, fallback?: string): string => {
   const v = process.env[k] ?? fallback;
@@ -47,25 +50,25 @@ const b64url = (bytes: ArrayBuffer | Uint8Array) => {
 };
 const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
 async function hmacKey() {
-  return crypto.subtle.importKey('raw', enc.encode(env('SESSION_SECRET')), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  return wc.subtle.importKey('raw', enc.encode(env('SESSION_SECRET')), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
 }
 export async function sign(payload: Record<string, unknown>, ttlSec: number): Promise<string> {
   const body = b64url(enc.encode(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + ttlSec })));
-  const sig = await crypto.subtle.sign('HMAC', await hmacKey(), enc.encode(body));
+  const sig = await wc.subtle.sign('HMAC', await hmacKey(), enc.encode(body));
   return `${body}.${b64url(sig)}`;
 }
 export async function verify<T extends Record<string, unknown>>(token: string | undefined): Promise<T | null> {
   if (!token || !token.includes('.')) return null;
   const [body, sig] = token.split('.');
   try {
-    const ok = await crypto.subtle.verify('HMAC', await hmacKey(), fromB64url(sig), enc.encode(body));
+    const ok = await wc.subtle.verify('HMAC', await hmacKey(), fromB64url(sig), enc.encode(body));
     if (!ok) return null;
     const data = JSON.parse(new TextDecoder().decode(fromB64url(body))) as T & { exp: number };
     return data.exp > Date.now() / 1000 ? data : null;
   } catch { return null; }
 }
-export const randomToken = (bytes = 32) => b64url(crypto.getRandomValues(new Uint8Array(bytes)));
-export const sha256b64url = async (s: string) => b64url(await crypto.subtle.digest('SHA-256', enc.encode(s)));
+export const randomToken = (bytes = 32) => b64url(wc.getRandomValues(new Uint8Array(bytes)));
+export const sha256b64url = async (s: string) => b64url(await wc.subtle.digest('SHA-256', enc.encode(s)));
 
 // ---------------------------------------------------------------- session
 export const SESSION_COOKIE = 'mm_session';

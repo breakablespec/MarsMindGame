@@ -143,11 +143,26 @@ async function stats(req: Request) {
   return json({ best: await rpc('mm_best', { p_player: s.pid, p_best: best }) });
 }
 
+// ---------------------------------------------------------------- health (no secrets, only whether they are set)
+function health(req: Request) {
+  const has = (k: string) => !!process.env[k];
+  const required = ['X_CLIENT_ID', 'X_CLIENT_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SESSION_SECRET', 'POST_URL'];
+  const missing = required.filter((k) => !has(k));
+  return {
+    ok: missing.length === 0,
+    function: 'running',
+    missing,
+    callback_url: `${siteOrigin(req)}/api/auth/callback`,
+    note: missing.length ? 'Add the missing variables in Netlify → Site configuration → Environment variables, then redeploy.' : 'All set. The callback_url must be listed in the X app (User authentication settings).',
+  };
+}
+
 // ---------------------------------------------------------------- router
 export default async (req: Request) => {
   const path = new URL(req.url).pathname.replace(/\/+$/, '');
   try {
     if (req.method === 'GET' && path === '/api/config') return json(gameConfig());
+    if (req.method === 'GET' && path === '/api/health') return json(health(req));
     if (req.method === 'GET' && path === '/api/auth/login') return await login(req).catch((e) => { console.error(e); return redirect('/?auth=error&reason=server'); });
     if (req.method === 'GET' && path === '/api/auth/callback') return await callback(req);
     if (req.method === 'POST' && path === '/api/auth/logout') { requireSameOrigin(req); return json({ ok: true }, 200, { 'set-cookie': cookie(SESSION_COOKIE, '', 0) }); }

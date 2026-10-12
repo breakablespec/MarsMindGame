@@ -70,6 +70,14 @@ Then **Deploys → Trigger deploy** so the function picks up the variables.
 
 ## 5. Check it
 
+Open **`https://YOUR-SITE/api/health`**. It should say `"function": "running"` and list nothing under `missing`.
+It also prints the exact `callback_url` to paste into the X app.
+
+- **The page is 404 / not found** → the function wasn't deployed. The site must be **connected to the GitHub repo**
+  (Netlify → Site configuration → Build & deploy → Continuous deployment). A drag-and-drop or manual deploy only uploads
+  the page, never the `/api` function. Also check that the latest deploy finished (Deploys → the top one is *Published*).
+- **`missing` lists variables** → add them, then Deploys → Trigger deploy.
+
 1. Open the site → **START COLONY** → **LOG IN WITH X** → approve on X.
 2. You land back on the quests with your @handle. Open all four, wait 5 seconds each: the balance becomes 4,000 MARS.
 3. In Supabase → Table Editor: your row in `players`, four rows in `quests`, four in `ledger`.

@@ -108,19 +108,39 @@ function applySummary(j: Summary) {
   };
 }
 
+/** True for the website build (dist/, marked by build.mjs): there, login is always Sign in with X. */
+function hosted() {
+  try {
+    if (!(window as unknown as { __MM_SERVER__?: number }).__MM_SERVER__) return false;
+    const local = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
+    return !local || new URLSearchParams(location.search).has('server');
+  } catch { return false; }
+}
+let apiProblem: string | null = null;
+/** Why the login server can't be reached (null when fine). Shown on the login screen. */
+export const loginProblem = () => apiProblem;
+
 /** Decide the mode and load the signed-in player. Call once before showing the title. */
 export async function initAccount(): Promise<void> {
+  let status = 0;
   try {
-    const r = await fetch('/api/me', { headers: { accept: 'application/json' }, credentials: 'same-origin' });
+    const r = await fetch('/api/me', { headers: { accept: 'application/json' }, credentials: 'same-origin', cache: 'no-store' });
+    status = r.status;
     const isJson = (r.headers.get('content-type') ?? '').includes('application/json');
     if (r.status === 200 && isJson) { mode = 'server'; applySummary(await r.json()); return; }
     if (r.status === 401 && isJson) {
       mode = 'server'; acc = null;
-      const c = await fetch('/api/config').then((x) => x.json()).catch(() => null);
+      const c = await fetch('/api/config', { cache: 'no-store' }).then((x) => x.json()).catch(() => null);
       applyConfig(c ?? undefined);
       return;
     }
   } catch { /* no server here */ }
+  if (hosted()) {
+    // a real site without a working /api: keep X login, and say what is wrong instead of asking for a handle
+    mode = 'server'; acc = null;
+    apiProblem = status ? `Login server answered ${status} — open /api/health` : 'Login server unreachable — open /api/health';
+    return;
+  }
   mode = 'local';
   try { const raw = localStorage.getItem(KEY); if (raw) acc = JSON.parse(raw) as Account; } catch { acc = null; }
 }
