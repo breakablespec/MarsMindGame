@@ -20,7 +20,7 @@ export const QUESTS: Quest[] = [
   { id: 'follow', title: '', short: QUEST_LABEL.follow, url: () => `https://x.com/intent/follow?screen_name=${encodeURIComponent(CONFIG.xHandle)}` },
   { id: 'like', title: 'Like the post', short: QUEST_LABEL.like, url: () => `https://x.com/intent/like?tweet_id=${postId()}` },
   { id: 'rt', title: 'Repost the post', short: QUEST_LABEL.rt, url: () => `https://x.com/intent/retweet?tweet_id=${postId()}` },
-  { id: 'reply', title: 'Comment on the post', short: QUEST_LABEL.reply, url: () => `https://x.com/intent/tweet?in_reply_to=${postId()}&text=${encodeURIComponent(CONFIG.replyText)}` },
+  { id: 'reply', title: 'Comment on the post', short: QUEST_LABEL.reply, url: () => `https://x.com/intent/tweet?in_reply_to=${postId()}` },
 ];
 export const questTitle = (q: Quest) => (q.id === 'follow' ? `Follow @${CONFIG.xHandle}` : q.title);
 

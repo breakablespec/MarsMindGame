@@ -20,7 +20,6 @@ export const CONFIG = {
   /** Text pre-filled in the quote post (ref link is added automatically). */
   shareText: 'Running my Mars colony with an AI operations system 🚀 Join me:',
   /** Reply text pre-filled for the comment quest. */
-  replyText: 'Commander reporting in. CORE online 🟢',
 };
 
 export const postId = () => (CONFIG.postUrl.match(/status\/(\d+)/)?.[1] ?? '');

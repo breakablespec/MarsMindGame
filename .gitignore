@@ -3,3 +3,6 @@ dist/preview.html
 .DS_Store
 *.log
 .artifact/
+
+# Local Netlify folder
+.netlify
